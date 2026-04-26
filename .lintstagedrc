@@ -1,0 +1,4 @@
+{
+  "src/**/*.+(ts|js)": ["eslint"],
+  "src/**/*.+(ts|js|json)": ["prettier --write"]
+}
