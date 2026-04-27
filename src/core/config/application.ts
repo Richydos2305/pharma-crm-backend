@@ -4,7 +4,8 @@ const REQUIRED_ENV_VARS = [
   'JWT_REFRESH_SECRET',
   'CLOUDINARY_CLOUD_NAME',
   'CLOUDINARY_API_KEY',
-  'CLOUDINARY_API_SECRET'
+  'CLOUDINARY_API_SECRET',
+  'LOGTAIL_SOURCE_TOKEN'
 ] as const;
 
 const validateConfig = (): void => {
@@ -24,6 +25,7 @@ interface AppConfig {
   port: string;
   nodeEnv: string;
   maxFileSize: number;
+  logtailToken: string;
 }
 
 const getConfig = (): AppConfig => {
@@ -37,7 +39,8 @@ const getConfig = (): AppConfig => {
     cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET!,
     port: process.env.PORT ?? '3000',
     nodeEnv: process.env.NODE_ENV ?? 'development',
-    maxFileSize: Number(process.env.MAX_FILE_SIZE) || 50 * 1024 * 1024
+    maxFileSize: Number(process.env.MAX_FILE_SIZE) || 50 * 1024 * 1024,
+    logtailToken: process.env.LOGTAIL_SOURCE_TOKEN!
   };
 };
 
