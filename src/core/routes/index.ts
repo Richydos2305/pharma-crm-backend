@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authRouter } from './auth';
 import { usersRouter } from './users';
 import { patientsRouter } from './patients';
-import { customFieldsRouter } from './customFields';
+import { settingsRouter } from './settings';
 import { filesRouter } from './files';
 import { pharmacistsRouter } from './pharmacists';
 
@@ -15,6 +15,6 @@ router.get('/api/health', (_req, res) => {
 router.use('/api/auth', authRouter);
 router.use('/api/users', usersRouter);
 router.use('/api/patients', patientsRouter);
-router.use('/api/custom-fields', customFieldsRouter);
+router.use('/api/settings', settingsRouter);
 router.use('/api/files', filesRouter);
 router.use('/api/pharmacists', pharmacistsRouter);

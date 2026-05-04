@@ -1,4 +1,5 @@
 import { Types } from 'mongoose';
+import { FormConfigData } from '../services/setting/interface';
 
 export interface IUser {
   email: string;
@@ -18,13 +19,9 @@ export interface IRefreshToken {
   isRevoked: boolean;
 }
 
-export interface ICustomField {
-  name: string;
-  label: string;
-  type: 'text' | 'textarea' | 'number' | 'date' | 'boolean' | 'file' | 'dropdown';
-  required: boolean;
-  description: string;
-  options?: string[];
+export interface ISetting {
+  userId: Types.ObjectId;
+  formConfig?: FormConfigData;
 }
 
 export interface IPharmacist {

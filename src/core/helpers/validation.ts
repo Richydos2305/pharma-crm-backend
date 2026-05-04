@@ -3,7 +3,7 @@ import { ValidationError } from '../errors/CustomErrors';
 import { logger } from './logger';
 import { RegisterBody, LoginBody, UpdateProfileBody } from '../services/auth/interface';
 import { CreatePatientBody, UpdatePatientBody } from '../services/patient/interface';
-import { CreateCustomFieldBody, UpdateCustomFieldBody } from '../services/customField/interface';
+import { SettingsData } from '../services/setting/interface';
 import { CreatePharmacistBody, UpdatePharmacistBody } from '../services/pharmacist/interface';
 
 const validate = (body: object, schema: Joi.ObjectSchema | Joi.Schema, context: string): void => {
@@ -59,7 +59,7 @@ export const validateUpdateProfilePayload = (body: UpdateProfileBody): void => {
 
 export const createPatientSchema = Joi.object({
   fullName: Joi.string().required(),
-  age: Joi.number().integer().min(0).max(150).required(),
+  age: Joi.number().min(0).max(150).required(),
   address: Joi.string().required(),
   phoneNumber: Joi.string().required(),
   pharmacistName: Joi.string().required(),
@@ -71,7 +71,7 @@ export const createPatientSchema = Joi.object({
 
 export const updatePatientSchema = Joi.object({
   fullName: Joi.string(),
-  age: Joi.number().integer().min(0).max(150),
+  age: Joi.number().min(0).max(150),
   address: Joi.string(),
   phoneNumber: Joi.string(),
   prescriptions: Joi.array().items(Joi.string()),
@@ -90,31 +90,26 @@ export const validateUpdatePatientPayload = (body: UpdatePatientBody): void => {
 
 const customFieldTypeValues = ['text', 'textarea', 'number', 'date', 'boolean', 'file', 'dropdown'] as const;
 
-export const createCustomFieldSchema = Joi.object({
+const formCustomFieldSchema = Joi.object({
   name: Joi.string().required(),
   label: Joi.string().required(),
   type: Joi.string()
     .valid(...customFieldTypeValues)
     .required(),
   required: Joi.boolean(),
+  section: Joi.string(),
   description: Joi.string(),
   options: Joi.array().items(Joi.string())
 });
 
-export const updateCustomFieldSchema = Joi.object({
-  label: Joi.string(),
-  type: Joi.string().valid(...customFieldTypeValues),
-  required: Joi.boolean(),
-  description: Joi.string(),
-  options: Joi.array().items(Joi.string())
+export const updateSettingsSchema = Joi.object({
+  formConfig: Joi.object({
+    customFields: Joi.array().items(formCustomFieldSchema)
+  })
 }).min(1);
 
-export const validateCreateCustomFieldPayload = (body: CreateCustomFieldBody): void => {
-  validate(body, createCustomFieldSchema, 'Create Custom Field');
-};
-
-export const validateUpdateCustomFieldPayload = (body: UpdateCustomFieldBody): void => {
-  validate(body, updateCustomFieldSchema, 'Update Custom Field');
+export const validateUpdateSettingsPayload = (body: SettingsData): void => {
+  validate(body, updateSettingsSchema, 'Update Settings');
 };
 
 export const createPharmacistSchema = Joi.object({

@@ -5,7 +5,7 @@ import { responseHandler } from '../helpers/index';
 
 export const errorHandler = (err: unknown, _req: Request, res: Response, _next: NextFunction): void => {
   if (isCustomError(err)) {
-    logger.warn('Handled Error', { code: err.code, message: err.message });
+    logger.warn({ code: err.code, message: err.message });
     responseHandler(res, { status: err.status, message: err.message, error: { code: err.code } });
   } else {
     logger.error('unhandled_error', { error: err });
