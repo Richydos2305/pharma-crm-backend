@@ -15,3 +15,13 @@ const fileFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
 };
 
 export const upload = multer({ storage, limits, fileFilter });
+
+const imageFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new ValidationError('Only image files are allowed'));
+  }
+};
+
+export const uploadImage = multer({ storage, limits, fileFilter: imageFilter });

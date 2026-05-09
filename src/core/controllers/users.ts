@@ -14,3 +14,9 @@ export const updateProfile = async (req: Request, res: Response, _next: NextFunc
   const user = await userService.updateProfile(res.locals.user.id as string, req.body);
   return { status: HttpStatus.OK, message: 'Profile updated', data: user };
 };
+
+export const uploadLogo = async (req: Request, res: Response, _next: NextFunction): Promise<ResponseHandlerParams> => {
+  const userService = ServiceFactory.createUserService();
+  const user = await userService.uploadLogo(res.locals.user.id as string, req.file);
+  return { status: HttpStatus.OK, message: 'Logo uploaded successfully', data: user };
+};

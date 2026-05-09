@@ -5,34 +5,22 @@ import { NotFoundError, SystemError } from '../../errors/CustomErrors';
 import { logger } from '../../helpers/logger';
 import { validateFileUpload } from '../../helpers/validation';
 import { IFileDocument } from '../../models/File';
-import { CloudinaryResourceType, CloudinaryUploadResult } from './interface';
+import { CloudinaryUploadResult } from '../../interfaces/helpers';
+import { getCloudinaryResourceType, uploadToCloudinary } from '../../helpers';
+import { CloudinaryFolder } from '../../constants';
 
 export class FileService {
   constructor(private readonly fileRepo: FileRepository) {}
-
-  private getResourceType(fileType: string): CloudinaryResourceType {
-    if (fileType.startsWith('image/')) return 'image';
-    if (fileType.startsWith('audio/')) return 'video';
-    return 'raw';
-  }
-
-  private uploadToCloudinary(file: Express.Multer.File, resourceType: CloudinaryResourceType): Promise<CloudinaryUploadResult> {
-    return new Promise<CloudinaryUploadResult>((resolve, reject) => {
-      cloudinary.uploader
-        .upload_stream({ resource_type: resourceType, folder: 'patient-records' }, (error, result) => {
-          if (error || !result) return reject(error ?? new Error('No result returned'));
-          resolve({ secureUrl: result.secure_url, publicId: result.public_id, resourceType });
-        })
-        .end(file.buffer);
-    });
-  }
 
   async upload(file: Express.Multer.File | undefined, patientId: string, userId: string): Promise<IFileDocument> {
     validateFileUpload(file);
 
     try {
-      const resourceType = this.getResourceType(file!.mimetype);
-      const cloudinaryResult = await this.uploadToCloudinary(file!, resourceType);
+      const resourceType = getCloudinaryResourceType(file!.mimetype);
+      const cloudinaryResult: CloudinaryUploadResult = await uploadToCloudinary(file!, {
+        resource_type: resourceType,
+        folder: CloudinaryFolder.PATIENT_RECORDS
+      });
       const newFile = await this.fileRepo.create({
         url: cloudinaryResult.secureUrl,
         publicId: cloudinaryResult.publicId,
