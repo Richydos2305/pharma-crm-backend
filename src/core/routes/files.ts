@@ -10,6 +10,6 @@ export const filesRouter = Router();
 
 filesRouter.use(verifyToken);
 
-filesRouter.post('/upload/:patientId', validate(idParamSchema, 'params'), upload.single('file'), asyncHandler(uploadFile));
-filesRouter.get('/patient/:patientId', validate(idParamSchema, 'params'), asyncHandler(listFiles));
+filesRouter.post('/upload/:id', validate(idParamSchema, 'params'), upload.single('file'), asyncHandler(uploadFile));
+filesRouter.get('/patient/:id', validate(idParamSchema, 'params'), asyncHandler(listFiles));
 filesRouter.delete('/:publicId', validate(publicIdParamSchema, 'params'), asyncHandler(deleteFile));

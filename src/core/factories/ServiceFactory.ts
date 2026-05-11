@@ -21,7 +21,7 @@ export class ServiceFactory {
   }
 
   static createPatientService(): PatientService {
-    return new PatientService(new PatientRepository(), new PharmacistRepository());
+    return new PatientService(new PatientRepository(), new PharmacistRepository(), new SettingRepository(), new FileService(new FileRepository()));
   }
 
   static createSettingService(): SettingService {

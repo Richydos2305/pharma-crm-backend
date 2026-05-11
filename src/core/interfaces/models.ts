@@ -44,10 +44,11 @@ export interface IPatient {
   pharmacistName: string;
   fullName: string;
   age: number;
-  address: string;
+  address?: string;
   phoneNumber: string;
   prescriptions: string[];
   appointmentDates: Date[];
   notes: string;
   customFields: Record<string, unknown>;
+  formSnapshot?: Record<string, unknown>;
 }
