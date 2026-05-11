@@ -5,7 +5,9 @@ const REQUIRED_ENV_VARS = [
   'CLOUDINARY_CLOUD_NAME',
   'CLOUDINARY_API_KEY',
   'CLOUDINARY_API_SECRET',
-  'LOGTAIL_SOURCE_TOKEN'
+  'LOGTAIL_SOURCE_TOKEN',
+  'RESEND_API_KEY',
+  'APP_URL'
 ] as const;
 
 const validateConfig = (): void => {
@@ -26,6 +28,8 @@ interface AppConfig {
   nodeEnv: string;
   maxFileSize: number;
   logtailToken: string;
+  resendApiKey: string;
+  appUrl: string;
 }
 
 const getConfig = (): AppConfig => {
@@ -40,7 +44,9 @@ const getConfig = (): AppConfig => {
     port: process.env.PORT ?? '3000',
     nodeEnv: process.env.NODE_ENV ?? 'development',
     maxFileSize: Number(process.env.MAX_FILE_SIZE) || 50 * 1024 * 1024,
-    logtailToken: process.env.LOGTAIL_SOURCE_TOKEN!
+    logtailToken: process.env.LOGTAIL_SOURCE_TOKEN!,
+    resendApiKey: process.env.RESEND_API_KEY!,
+    appUrl: process.env.APP_URL!
   };
 };
 

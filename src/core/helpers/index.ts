@@ -1,3 +1,4 @@
+import { randomBytes, createHash } from 'crypto';
 import { Document } from 'mongoose';
 import { Response } from 'express';
 import { ResponseHandlerParams, CloudinaryResourceType, CloudinaryUploadResult } from '../interfaces/helpers';
@@ -15,11 +16,13 @@ export const responseHandler = (res: Response, params: ResponseHandlerParams): v
 
 export const sanitizeUser = (user: Document): SanitizedUser => {
   const obj = user.toObject() as Record<string, unknown>;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password: _password, _id, __v, companyLogoPublicId: _companyLogoPublicId, ...rest } = obj;
   return { ...rest, id: String(_id) } as SanitizedUser;
 };
 
 export const sanitizePatient = (patient: Document): Record<string, unknown> => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { _id, __v, ...rest } = patient.toObject() as Record<string, unknown>;
   return { ...rest, id: String(_id) };
 };
@@ -43,3 +46,11 @@ export const uploadToCloudinary = (
       .end(file.buffer);
   });
 };
+
+export const generateToken = (): { raw: string; hashed: string } => {
+  const raw = randomBytes(32).toString('hex');
+  const hashed = createHash('sha256').update(raw).digest('hex');
+  return { raw, hashed };
+};
+
+export const hashToken = (raw: string): string => createHash('sha256').update(raw).digest('hex');

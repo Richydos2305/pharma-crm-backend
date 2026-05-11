@@ -31,4 +31,8 @@ export class BaseRepository<T> {
   async deleteOne(filter: FilterQuery<T>): Promise<void> {
     await this.model.deleteOne(filter).exec();
   }
+
+  async deleteMany(filter: FilterQuery<T>): Promise<void> {
+    await this.model.deleteMany(filter).exec();
+  }
 }

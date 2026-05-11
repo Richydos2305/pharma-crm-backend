@@ -15,7 +15,9 @@ vi.mock('../../config/application', () => ({
 import { AuthService } from './index';
 import { UserRepository } from '../../repositories/UserRepository';
 import { RefreshTokenRepository } from '../../repositories/RefreshTokenRepository';
-import { ConflictError, UnauthorizedError } from '../../errors/CustomErrors';
+import { VerificationTokenRepository } from '../../repositories/VerificationTokenRepository';
+import { EmailService } from '../email/index';
+import { ConflictError, UnauthorizedError, EmailNotVerifiedError } from '../../errors/CustomErrors';
 
 let hashedPassword: string;
 
@@ -31,6 +33,7 @@ interface MockUser {
   password: string;
   fullName: string;
   role: string;
+  isEmailVerified: boolean;
   toObject(): Record<string, unknown>;
 }
 
@@ -41,12 +44,13 @@ interface MockTokenRecord {
   toObject(): Record<string, unknown>;
 }
 
-const mockUser = (): MockUser => ({
+const mockUser = (isEmailVerified = true): MockUser => ({
   _id: MOCK_USER_ID,
   email: 'test@pharmacy.com',
   password: hashedPassword,
   fullName: 'John Doe',
   role: 'pharmacist',
+  isEmailVerified,
   toObject(): Record<string, unknown> {
     return { ...this };
   }
@@ -61,17 +65,32 @@ const mockTokenRecord = (): MockTokenRecord => ({
   }
 });
 
+const makeVerificationTokenRepo = (overrides = {}): VerificationTokenRepository =>
+  ({
+    create: vi.fn().mockResolvedValue({}),
+    findOne: vi.fn().mockResolvedValue(null),
+    deleteOne: vi.fn().mockResolvedValue({}),
+    deleteMany: vi.fn().mockResolvedValue({}),
+    ...overrides
+  }) as unknown as VerificationTokenRepository;
+
+const makeEmailService = (): EmailService =>
+  ({
+    sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
+    sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined)
+  }) as unknown as EmailService;
+
 describe('AuthService.register', () => {
-  it('creates a user and returns sanitised data when email is not taken', async () => {
+  it('sends verification email and returns message when email is not taken', async () => {
     const user = mockUser();
     const userRepo = {
       findOne: vi.fn().mockResolvedValue(null),
       create: vi.fn().mockResolvedValue(user)
     } as unknown as UserRepository;
-    const tokenRepo = {
-      create: vi.fn().mockResolvedValue({})
-    } as unknown as RefreshTokenRepository;
-    const service = new AuthService(userRepo, tokenRepo);
+    const tokenRepo = { create: vi.fn().mockResolvedValue({}) } as unknown as RefreshTokenRepository;
+    const verificationTokenRepo = makeVerificationTokenRepo();
+    const emailService = makeEmailService();
+    const service = new AuthService(userRepo, tokenRepo, verificationTokenRepo, emailService);
 
     const result = await service.register({
       email: 'test@pharmacy.com',
@@ -79,10 +98,8 @@ describe('AuthService.register', () => {
       fullName: 'John Doe'
     });
 
-    expect(result).toHaveProperty('accessToken');
-    expect(result).toHaveProperty('refreshToken');
-    expect(result.user).not.toHaveProperty('password');
-    expect(result.user.email).toBe('test@pharmacy.com');
+    expect(result).toHaveProperty('message');
+    expect(emailService.sendVerificationEmail).toHaveBeenCalledOnce();
   });
 
   it('throws ConflictError when email already exists', async () => {
@@ -90,22 +107,22 @@ describe('AuthService.register', () => {
       findOne: vi.fn().mockResolvedValue(mockUser())
     } as unknown as UserRepository;
     const tokenRepo = {} as unknown as RefreshTokenRepository;
-    const service = new AuthService(userRepo, tokenRepo);
+    const service = new AuthService(userRepo, tokenRepo, makeVerificationTokenRepo(), makeEmailService());
 
     await expect(service.register({ email: 'test@pharmacy.com', password: 'password123', fullName: 'John Doe' })).rejects.toThrow(ConflictError);
   });
 });
 
 describe('AuthService.login', () => {
-  it('returns tokens and sanitised user on valid credentials', async () => {
-    const user = mockUser();
+  it('returns tokens and sanitised user on valid verified credentials', async () => {
+    const user = mockUser(true);
     const userRepo = {
       findOne: vi.fn().mockResolvedValue(user)
     } as unknown as UserRepository;
     const tokenRepo = {
       create: vi.fn().mockResolvedValue({})
     } as unknown as RefreshTokenRepository;
-    const service = new AuthService(userRepo, tokenRepo);
+    const service = new AuthService(userRepo, tokenRepo, makeVerificationTokenRepo(), makeEmailService());
 
     const result = await service.login({ email: 'test@pharmacy.com', password: 'correct-password' });
 
@@ -114,19 +131,28 @@ describe('AuthService.login', () => {
     expect(result.user).not.toHaveProperty('password');
   });
 
+  it('throws EmailNotVerifiedError when user is not verified', async () => {
+    const user = mockUser(false);
+    const userRepo = { findOne: vi.fn().mockResolvedValue(user) } as unknown as UserRepository;
+    const tokenRepo = {} as unknown as RefreshTokenRepository;
+    const service = new AuthService(userRepo, tokenRepo, makeVerificationTokenRepo(), makeEmailService());
+
+    await expect(service.login({ email: 'test@pharmacy.com', password: 'correct-password' })).rejects.toThrow(EmailNotVerifiedError);
+  });
+
   it('throws UnauthorizedError when user is not found', async () => {
     const userRepo = { findOne: vi.fn().mockResolvedValue(null) } as unknown as UserRepository;
     const tokenRepo = {} as unknown as RefreshTokenRepository;
-    const service = new AuthService(userRepo, tokenRepo);
+    const service = new AuthService(userRepo, tokenRepo, makeVerificationTokenRepo(), makeEmailService());
 
     await expect(service.login({ email: 'x@x.com', password: 'password123' })).rejects.toThrow(UnauthorizedError);
   });
 
   it('throws UnauthorizedError when password does not match', async () => {
-    const user = mockUser();
+    const user = mockUser(true);
     const userRepo = { findOne: vi.fn().mockResolvedValue(user) } as unknown as UserRepository;
     const tokenRepo = {} as unknown as RefreshTokenRepository;
-    const service = new AuthService(userRepo, tokenRepo);
+    const service = new AuthService(userRepo, tokenRepo, makeVerificationTokenRepo(), makeEmailService());
 
     await expect(service.login({ email: 'test@pharmacy.com', password: 'wrong-password' })).rejects.toThrow(UnauthorizedError);
   });
@@ -143,7 +169,7 @@ describe('AuthService.refresh', () => {
       updateOne: vi.fn().mockResolvedValue({}),
       create: vi.fn().mockResolvedValue({})
     } as unknown as RefreshTokenRepository;
-    const service = new AuthService(userRepo, tokenRepo);
+    const service = new AuthService(userRepo, tokenRepo, makeVerificationTokenRepo(), makeEmailService());
 
     const result = await service.refresh(validToken);
 
@@ -155,7 +181,7 @@ describe('AuthService.refresh', () => {
   it('throws UnauthorizedError when token record is not found', async () => {
     const userRepo = {} as unknown as UserRepository;
     const tokenRepo = { findOne: vi.fn().mockResolvedValue(null) } as unknown as RefreshTokenRepository;
-    const service = new AuthService(userRepo, tokenRepo);
+    const service = new AuthService(userRepo, tokenRepo, makeVerificationTokenRepo(), makeEmailService());
 
     await expect(service.refresh('invalid-token')).rejects.toThrow(UnauthorizedError);
   });
@@ -169,7 +195,7 @@ describe('AuthService.logout', () => {
       findOne: vi.fn().mockResolvedValue(record),
       updateOne: vi.fn().mockResolvedValue({})
     } as unknown as RefreshTokenRepository;
-    const service = new AuthService(userRepo, tokenRepo);
+    const service = new AuthService(userRepo, tokenRepo, makeVerificationTokenRepo(), makeEmailService());
 
     await service.logout('some-token');
 
@@ -179,7 +205,7 @@ describe('AuthService.logout', () => {
   it('does not throw when token record does not exist', async () => {
     const userRepo = {} as unknown as UserRepository;
     const tokenRepo = { findOne: vi.fn().mockResolvedValue(null) } as unknown as RefreshTokenRepository;
-    const service = new AuthService(userRepo, tokenRepo);
+    const service = new AuthService(userRepo, tokenRepo, makeVerificationTokenRepo(), makeEmailService());
 
     await expect(service.logout('non-existent-token')).resolves.toBeUndefined();
   });

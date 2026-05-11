@@ -28,11 +28,29 @@ export interface LoginResult {
   user: SanitizedUser;
 }
 
-export type RegisterResult = LoginResult;
+export interface RegisterResult {
+  message: string;
+}
 
 export interface RefreshResult {
   accessToken: string;
   refreshToken: string;
+}
+
+interface EmailBody {
+  email: string;
+}
+
+export type ResendVerificationBody = EmailBody;
+export type ForgotPasswordBody = EmailBody;
+
+export interface VerifyEmailBody {
+  token: string;
+}
+
+export interface ResetPasswordBody {
+  token: string;
+  newPassword: string;
 }
 
 export interface UpdateProfileBody {
