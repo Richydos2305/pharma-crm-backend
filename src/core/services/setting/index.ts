@@ -19,7 +19,7 @@ export class SettingService {
     if (existing) throw new ConflictError('Settings already exist for this user');
     const setting = await this.settingRepo.create({
       userId: new Types.ObjectId(userId),
-      formConfig: { customFields: [] }
+      formConfig: {}
     });
     logger.info('Settings Created', { userId });
     return setting;
