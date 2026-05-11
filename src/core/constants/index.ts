@@ -36,3 +36,8 @@ export const ALLOWED_FILE_TYPES = [
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 ];
+
+export const CloudinaryFolder = {
+  PATIENT_RECORDS: 'patient-records',
+  COMPANY_LOGOS: 'company-logos'
+} as const;

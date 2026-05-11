@@ -12,6 +12,7 @@ const userSchema = new Schema<IUser>(
     phoneNumber: { type: String },
     companyName: { type: String },
     companyLogo: { type: String },
+    companyLogoPublicId: { type: String },
     primaryColor: { type: String }
   },
   { timestamps: true }

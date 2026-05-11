@@ -10,3 +10,11 @@ export interface ResponseHandlerParams {
   data?: unknown;
   error?: { code: string };
 }
+
+export type CloudinaryResourceType = 'image' | 'video' | 'raw';
+
+export interface CloudinaryUploadResult {
+  secureUrl: string;
+  publicId: string;
+  resourceType: CloudinaryResourceType;
+}

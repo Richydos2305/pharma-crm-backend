@@ -9,6 +9,7 @@ export interface IUser {
   phoneNumber?: string;
   companyName?: string;
   companyLogo?: string;
+  companyLogoPublicId?: string;
   primaryColor?: string;
 }
 
