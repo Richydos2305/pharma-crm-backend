@@ -9,12 +9,13 @@ const patientSchema = new Schema<IPatient>(
     pharmacistName: { type: String, required: true, trim: true },
     fullName: { type: String, required: true, trim: true },
     age: { type: Number, required: true },
-    address: { type: String, required: true, trim: true },
+    address: { type: String, trim: true },
     phoneNumber: { type: String, required: true, trim: true },
     prescriptions: [{ type: String, trim: true }],
     appointmentDates: [{ type: Date }],
     notes: { type: String, default: '' },
-    customFields: { type: Schema.Types.Mixed, default: {} }
+    customFields: { type: Schema.Types.Mixed, default: {} },
+    formSnapshot: { type: Schema.Types.Mixed }
   },
   {
     timestamps: true
