@@ -3,6 +3,7 @@
     "strict": true,
     "target": "ES2022",
     "module": "CommonJS",
+    "jsx": "react-jsx",
     "outDir": "dist",
     "rootDir": "src",
     "esModuleInterop": true,

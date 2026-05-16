@@ -1,7 +1,10 @@
+import { render } from '@react-email/render';
 import { Resend } from 'resend';
 import { settings } from '../../config/application';
 import { logger } from '../../helpers/logger';
 import { SendVerificationEmailParams, SendPasswordResetEmailParams } from './interface';
+import { VerifyEmailTemplate } from './templates/VerifyEmailTemplate';
+import { ResetPasswordTemplate } from './templates/ResetPasswordTemplate';
 
 export class EmailService {
   private readonly client: Resend;
@@ -16,10 +19,7 @@ export class EmailService {
       from: settings.emailFrom,
       to,
       subject: 'Verify your email address',
-      html: `<p>Hi ${fullName},</p>
-             <p>Please verify your email address by clicking the link below. This link expires in 24 hours.</p>
-             <p><a href="${link}">Verify Email</a></p>
-             <p>If you did not request this, you can safely ignore this email.</p>`
+      html: await render(<VerifyEmailTemplate fullName={fullName} verifyUrl={link} />)
     });
     if (error) {
       logger.error('Failed to send verification email', { to, error });
@@ -33,10 +33,7 @@ export class EmailService {
       from: settings.emailFrom,
       to,
       subject: 'Reset your password',
-      html: `<p>Hi ${fullName},</p>
-             <p>You requested a password reset. Click the link below to set a new password. This link expires in 1 hour.</p>
-             <p><a href="${link}">Reset Password</a></p>
-             <p>If you did not request this, you can safely ignore this email.</p>`
+      html: await render(<ResetPasswordTemplate fullName={fullName} resetUrl={link} />)
     });
     if (error) {
       logger.error('Failed to send password reset email', { to, error });
