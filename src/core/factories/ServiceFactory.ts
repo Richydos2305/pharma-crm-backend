@@ -1,4 +1,5 @@
 import { AuthService } from '../services/auth/index';
+import { EmailService } from '../services/email/index';
 import { PatientService } from '../services/patient/index';
 import { SettingService } from '../services/setting/index';
 import { FileService } from '../services/file/index';
@@ -6,6 +7,7 @@ import { UserService } from '../services/user/index';
 import { PharmacistService } from '../services/pharmacist/index';
 import { UserRepository } from '../repositories/UserRepository';
 import { RefreshTokenRepository } from '../repositories/RefreshTokenRepository';
+import { VerificationTokenRepository } from '../repositories/VerificationTokenRepository';
 import { PatientRepository } from '../repositories/PatientRepository';
 import { SettingRepository } from '../repositories/SettingRepository';
 import { FileRepository } from '../repositories/FileRepository';
@@ -13,7 +15,7 @@ import { PharmacistRepository } from '../repositories/PharmacistRepository';
 
 export class ServiceFactory {
   static createAuthService(): AuthService {
-    return new AuthService(new UserRepository(), new RefreshTokenRepository());
+    return new AuthService(new UserRepository(), new RefreshTokenRepository(), new VerificationTokenRepository(), new EmailService());
   }
 
   static createUserService(): UserService {

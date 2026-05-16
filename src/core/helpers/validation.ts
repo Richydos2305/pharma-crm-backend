@@ -1,7 +1,15 @@
 import Joi from 'joi';
 import { ValidationError } from '../errors/CustomErrors';
 import { logger } from './logger';
-import { RegisterBody, LoginBody, UpdateProfileBody } from '../services/auth/interface';
+import {
+  RegisterBody,
+  LoginBody,
+  UpdateProfileBody,
+  VerifyEmailBody,
+  ResendVerificationBody,
+  ForgotPasswordBody,
+  ResetPasswordBody
+} from '../services/auth/interface';
 import { CreatePatientBody, UpdatePatientBody } from '../services/patient/interface';
 import { SettingsData } from '../services/setting/interface';
 import { CreatePharmacistBody, UpdatePharmacistBody } from '../services/pharmacist/interface';
@@ -27,6 +35,23 @@ export const loginSchema = Joi.object({
 
 export const refreshSchema = Joi.object({
   token: Joi.string().required()
+});
+
+export const verifyEmailSchema = Joi.object({
+  token: Joi.string().required()
+});
+
+export const resendVerificationSchema = Joi.object({
+  email: Joi.string().email().required()
+});
+
+export const forgotPasswordSchema = Joi.object({
+  email: Joi.string().email().required()
+});
+
+export const resetPasswordSchema = Joi.object({
+  token: Joi.string().required(),
+  newPassword: Joi.string().min(8).required()
 });
 
 export const idParamSchema = Joi.object({
@@ -55,6 +80,22 @@ export const validateLoginPayload = (body: LoginBody): void => {
 
 export const validateUpdateProfilePayload = (body: UpdateProfileBody): void => {
   validate(body, updateProfileSchema, 'Update Profile');
+};
+
+export const validateVerifyEmailPayload = (body: VerifyEmailBody): void => {
+  validate(body, verifyEmailSchema, 'Verify Email');
+};
+
+export const validateResendVerificationPayload = (body: ResendVerificationBody): void => {
+  validate(body, resendVerificationSchema, 'Resend Verification');
+};
+
+export const validateForgotPasswordPayload = (body: ForgotPasswordBody): void => {
+  validate(body, forgotPasswordSchema, 'Forgot Password');
+};
+
+export const validateResetPasswordPayload = (body: ResetPasswordBody): void => {
+  validate(body, resetPasswordSchema, 'Reset Password');
 };
 
 export const createPatientSchema = Joi.object({
@@ -86,7 +127,7 @@ export const validateUpdatePatientPayload = (body: UpdatePatientBody): void => {
 
 const customFieldTypeValues = ['text', 'textarea', 'number', 'date', 'boolean', 'file', 'dropdown'] as const;
 
-const formCustomFieldSchema = Joi.object({
+export const formCustomFieldSchema = Joi.object({
   name: Joi.string().required(),
   label: Joi.string().required(),
   type: Joi.string()
