@@ -13,7 +13,7 @@ export class EmailService {
   async sendVerificationEmail({ to, fullName, token }: SendVerificationEmailParams): Promise<void> {
     const link = `${settings.appUrl}/verify-email?token=${token}`;
     const { error } = await this.client.emails.send({
-      from: 'PharmaCRM <onboarding@resend.dev>',
+      from: settings.emailFrom,
       to,
       subject: 'Verify your email address',
       html: `<p>Hi ${fullName},</p>
@@ -30,7 +30,7 @@ export class EmailService {
   async sendPasswordResetEmail({ to, fullName, token }: SendPasswordResetEmailParams): Promise<void> {
     const link = `${settings.appUrl}/reset-password?token=${token}`;
     const { error } = await this.client.emails.send({
-      from: 'PharmaCRM <onboarding@resend.dev>',
+      from: settings.emailFrom,
       to,
       subject: 'Reset your password',
       html: `<p>Hi ${fullName},</p>

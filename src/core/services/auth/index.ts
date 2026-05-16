@@ -64,6 +64,7 @@ export class AuthService {
       expiresAt: new Date(Date.now() + VERIFICATION_TOKEN_EXPIRY_MS)
     });
     await this.emailService.sendVerificationEmail({ to: user.email, fullName: user.fullName, token: raw });
+    logger.info('Verification Email Sent', { userId: user._id.toString() });
 
     logger.info('User Registered', { userId: user._id.toString(), email: user.email });
     return { message: 'Registration successful. Please check your email to verify your account.' };
