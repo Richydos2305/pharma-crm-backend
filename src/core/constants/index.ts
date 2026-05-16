@@ -21,6 +21,11 @@ export const SecurityConfig = {
   BCRYPT_ROUNDS: 12
 } as const;
 
+export const VerificationTokenTypes = {
+  EMAIL_VERIFICATION: 'email_verification',
+  PASSWORD_RESET: 'password_reset'
+} as const;
+
 export const ALLOWED_FILE_TYPES = [
   'image/jpeg',
   'image/png',

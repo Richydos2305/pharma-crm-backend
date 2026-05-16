@@ -16,6 +16,15 @@ export class UnauthorizedError extends Error {
   }
 }
 
+export class EmailNotVerifiedError extends Error {
+  readonly status = 403;
+  readonly code = 'EMAIL_NOT_VERIFIED';
+  constructor(message: string) {
+    super(message);
+    this.name = 'EmailNotVerifiedError';
+  }
+}
+
 export class ForbiddenError extends Error {
   readonly status = 403;
   readonly code = 'FORBIDDEN';
@@ -52,11 +61,12 @@ export class SystemError extends Error {
   }
 }
 
-export type AppError = ValidationError | UnauthorizedError | ForbiddenError | NotFoundError | ConflictError | SystemError;
+export type AppError = ValidationError | UnauthorizedError | EmailNotVerifiedError | ForbiddenError | NotFoundError | ConflictError | SystemError;
 
 export const isCustomError = (err: unknown): err is AppError =>
   err instanceof ValidationError ||
   err instanceof UnauthorizedError ||
+  err instanceof EmailNotVerifiedError ||
   err instanceof ForbiddenError ||
   err instanceof NotFoundError ||
   err instanceof ConflictError ||

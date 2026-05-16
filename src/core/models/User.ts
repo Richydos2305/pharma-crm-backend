@@ -9,6 +9,7 @@ const userSchema = new Schema<IUser>(
     password: { type: String, required: true },
     fullName: { type: String, required: true, trim: true },
     role: { type: String, default: 'Owner' },
+    isEmailVerified: { type: Boolean, default: false },
     phoneNumber: { type: String },
     companyName: { type: String },
     companyLogo: { type: String },

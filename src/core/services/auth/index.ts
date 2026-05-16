@@ -4,18 +4,34 @@ import jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
 import { UserRepository } from '../../repositories/UserRepository';
 import { RefreshTokenRepository } from '../../repositories/RefreshTokenRepository';
+import { VerificationTokenRepository } from '../../repositories/VerificationTokenRepository';
+import { EmailService } from '../email/index';
 import { validateRegisterPayload, validateLoginPayload } from '../../helpers/validation';
-import { sanitizeUser } from '../../helpers/index';
-import { SecurityConfig } from '../../constants';
+import { sanitizeUser, generateToken, hashToken } from '../../helpers/index';
+import { SecurityConfig, VerificationTokenTypes } from '../../constants';
 import { settings } from '../../config/application';
-import { ConflictError, UnauthorizedError } from '../../errors/CustomErrors';
+import { ConflictError, UnauthorizedError, EmailNotVerifiedError, NotFoundError } from '../../errors/CustomErrors';
 import { logger } from '../../helpers/logger';
-import { SanitizedUser, LoginResult, RegisterResult, RefreshResult, RegisterBody, LoginBody } from './interface';
+import {
+  LoginResult,
+  RegisterResult,
+  RefreshResult,
+  RegisterBody,
+  LoginBody,
+  ResendVerificationBody,
+  ForgotPasswordBody,
+  ResetPasswordBody
+} from './interface';
+
+const VERIFICATION_TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000;
+const PASSWORD_RESET_TOKEN_EXPIRY_MS = 60 * 60 * 1000;
 
 export class AuthService {
   constructor(
     private readonly userRepo: UserRepository,
-    private readonly tokenRepo: RefreshTokenRepository
+    private readonly tokenRepo: RefreshTokenRepository,
+    private readonly verificationTokenRepo: VerificationTokenRepository,
+    private readonly emailService: EmailService
   ) {}
 
   private async issueTokens(userId: string, role: string): Promise<{ accessToken: string; refreshToken: string }> {
@@ -39,9 +55,19 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(body.password, SecurityConfig.BCRYPT_ROUNDS);
     const user = await this.userRepo.create({ ...body, password: hashedPassword });
-    const tokens = await this.issueTokens(user._id.toString(), user.role);
+
+    const { raw, hashed } = generateToken();
+    await this.verificationTokenRepo.create({
+      userId: user._id,
+      token: hashed,
+      type: VerificationTokenTypes.EMAIL_VERIFICATION,
+      expiresAt: new Date(Date.now() + VERIFICATION_TOKEN_EXPIRY_MS)
+    });
+    await this.emailService.sendVerificationEmail({ to: user.email, fullName: user.fullName, token: raw });
+    logger.info('Verification Email Sent', { userId: user._id.toString() });
+
     logger.info('User Registered', { userId: user._id.toString(), email: user.email });
-    return { ...tokens, user: sanitizeUser(user) };
+    return { message: 'Registration successful. Please check your email to verify your account.' };
   }
 
   async login(body: LoginBody): Promise<LoginResult> {
@@ -52,6 +78,8 @@ export class AuthService {
 
     const passwordsMatch = await bcrypt.compare(body.password, user.password);
     if (!passwordsMatch) throw new UnauthorizedError('Invalid credentials');
+
+    if (!user.isEmailVerified) throw new EmailNotVerifiedError('Please verify your email before logging in');
 
     const tokens = await this.issueTokens(user._id.toString(), user.role);
     logger.info('User Login', { userId: user._id.toString(), email: user.email });
@@ -86,8 +114,79 @@ export class AuthService {
       logger.warn('Logout Attempted With Unknown Token', { token: token.slice(0, 8) + '...' });
       return;
     }
-
     await this.tokenRepo.updateOne(tokenRecord._id.toString(), { isRevoked: true }, { new: true });
     logger.info('User Logout', { userId: tokenRecord.userId.toString() });
+  }
+
+  async verifyEmail(token: string): Promise<void> {
+    const hashed = hashToken(token);
+    const record = await this.verificationTokenRepo.findOne({ token: hashed, type: VerificationTokenTypes.EMAIL_VERIFICATION });
+    if (!record) throw new UnauthorizedError('Invalid or expired verification token');
+
+    if (record.expiresAt < new Date()) {
+      await this.verificationTokenRepo.deleteOne({ _id: record._id });
+      throw new UnauthorizedError('Verification token has expired');
+    }
+
+    await this.userRepo.updateOne(record.userId.toString(), { isEmailVerified: true }, { new: true });
+    await this.verificationTokenRepo.deleteOne({ _id: record._id });
+    logger.info('Email Verified', { userId: record.userId.toString() });
+  }
+
+  async resendVerification(body: ResendVerificationBody): Promise<void> {
+    const user = await this.userRepo.findOne({ email: body.email });
+    if (!user) return;
+
+    if (user.isEmailVerified) throw new ConflictError('Email is already verified');
+
+    await this.verificationTokenRepo.deleteMany({ userId: user._id, type: VerificationTokenTypes.EMAIL_VERIFICATION });
+
+    const { raw, hashed } = generateToken();
+    await this.verificationTokenRepo.create({
+      userId: user._id,
+      token: hashed,
+      type: VerificationTokenTypes.EMAIL_VERIFICATION,
+      expiresAt: new Date(Date.now() + VERIFICATION_TOKEN_EXPIRY_MS)
+    });
+    await this.emailService.sendVerificationEmail({ to: user.email, fullName: user.fullName, token: raw });
+    logger.info('Verification Email Resent', { userId: user._id.toString() });
+  }
+
+  async forgotPassword(body: ForgotPasswordBody): Promise<void> {
+    const user = await this.userRepo.findOne({ email: body.email });
+    if (!user) return;
+
+    await this.verificationTokenRepo.deleteMany({ userId: user._id, type: VerificationTokenTypes.PASSWORD_RESET });
+
+    const { raw, hashed } = generateToken();
+    await this.verificationTokenRepo.create({
+      userId: user._id,
+      token: hashed,
+      type: VerificationTokenTypes.PASSWORD_RESET,
+      expiresAt: new Date(Date.now() + PASSWORD_RESET_TOKEN_EXPIRY_MS)
+    });
+    await this.emailService.sendPasswordResetEmail({ to: user.email, fullName: user.fullName, token: raw });
+    logger.info('Password Reset Email Sent', { userId: user._id.toString() });
+  }
+
+  async resetPassword(body: ResetPasswordBody): Promise<void> {
+    const hashed = hashToken(body.token);
+    const record = await this.verificationTokenRepo.findOne({ token: hashed, type: VerificationTokenTypes.PASSWORD_RESET });
+    if (!record) throw new UnauthorizedError('Invalid or expired reset token');
+
+    if (record.expiresAt < new Date()) {
+      await this.verificationTokenRepo.deleteOne({ _id: record._id });
+      throw new UnauthorizedError('Reset token has expired');
+    }
+
+    const user = await this.userRepo.findOne({ _id: record.userId });
+    if (!user) throw new NotFoundError('User not found');
+
+    const hashedPassword = await bcrypt.hash(body.newPassword, SecurityConfig.BCRYPT_ROUNDS);
+    await this.userRepo.updateOne(user._id.toString(), { password: hashedPassword }, { new: true });
+    await this.verificationTokenRepo.deleteOne({ _id: record._id });
+    await this.tokenRepo.deleteMany({ userId: user._id });
+
+    logger.info('Password Reset', { userId: user._id.toString() });
   }
 }
