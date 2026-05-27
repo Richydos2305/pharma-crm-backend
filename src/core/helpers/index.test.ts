@@ -1,4 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
+
+vi.mock('../config/cloudinary', () => ({ cloudinary: { uploader: { upload: vi.fn(), destroy: vi.fn() } } }));
+
 import { responseHandler, sanitizeUser } from './index';
 
 describe('responseHandler', () => {
