@@ -30,6 +30,13 @@ module.exports = {
       rules: {
         '@typescript-eslint/explicit-function-return-type': ['error']
       }
+    },
+    {
+      files: ['*.test.ts'],
+      rules: {
+        '@typescript-eslint/explicit-function-return-type': 'off',
+        'no-use-before-define': 'off'
+      }
     }
   ]
 };
