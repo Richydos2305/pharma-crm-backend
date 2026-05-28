@@ -10,8 +10,10 @@ export class SettingService {
 
   async get(userId: string): Promise<ISettingDocument> {
     const setting = await this.settingRepo.findOne({ userId: new Types.ObjectId(userId) });
-    if (!setting) throw new NotFoundError('Settings not found');
-    return setting;
+    if (setting) return setting;
+    const created = await this.settingRepo.create({ userId: new Types.ObjectId(userId), formConfig: {} });
+    logger.info('Settings auto-created', { userId });
+    return created;
   }
 
   async create(userId: string): Promise<ISettingDocument> {

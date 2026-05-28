@@ -5,9 +5,10 @@ import { ResponseHandlerParams } from '../interfaces/helpers';
 
 export const getSettings = async (_req: Request, res: Response, _next: NextFunction): Promise<ResponseHandlerParams> => {
   const settingService = ServiceFactory.createSettingService();
+  const onboardingService = ServiceFactory.createOnboardingService();
   const userId = res.locals.user.id as string;
-  const result = await settingService.get(userId);
-  return { status: HttpStatus.OK, message: 'Settings retrieved successfully', data: result };
+  const [setting, onboarding] = await Promise.all([settingService.get(userId), onboardingService.getStatus(userId)]);
+  return { status: HttpStatus.OK, message: 'Settings retrieved successfully', data: { ...setting.toObject(), onboarding } };
 };
 
 export const createSettings = async (_req: Request, res: Response, _next: NextFunction): Promise<ResponseHandlerParams> => {
