@@ -5,6 +5,7 @@ import { SettingService } from '../services/setting/index';
 import { FileService } from '../services/file/index';
 import { UserService } from '../services/user/index';
 import { PharmacistService } from '../services/pharmacist/index';
+import { OnboardingService } from '../services/onboarding/index';
 import { UserRepository } from '../repositories/UserRepository';
 import { RefreshTokenRepository } from '../repositories/RefreshTokenRepository';
 import { VerificationTokenRepository } from '../repositories/VerificationTokenRepository';
@@ -36,5 +37,9 @@ export class ServiceFactory {
 
   static createPharmacistService(): PharmacistService {
     return new PharmacistService(new PharmacistRepository());
+  }
+
+  static createOnboardingService(): OnboardingService {
+    return new OnboardingService(new PatientRepository(), new PharmacistRepository(), new UserRepository(), new SettingRepository());
   }
 }

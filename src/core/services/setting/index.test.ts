@@ -15,7 +15,6 @@ import { SettingRepository } from '../../repositories/SettingRepository';
 import { ConflictError, NotFoundError } from '../../errors/CustomErrors';
 
 const MOCK_USER_ID = '507f1f77bcf86cd799439011';
-const OTHER_USER_ID = '507f1f77bcf86cd799439099';
 
 // ─── Mock data factories ──────────────────────────────────────────────────────
 
@@ -41,25 +40,26 @@ const makeService = (settingRepo = makeSettingRepo()) => new SettingService(sett
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('SettingService.get', () => {
-  it('returns the settings document when it exists for the user', async () => {
+  it('returns the existing document without calling create when settings exist for the user', async () => {
     const setting = mockSetting();
-    const service = makeService(makeSettingRepo({ findOne: vi.fn().mockResolvedValue(setting) }));
+    const settingRepo = makeSettingRepo({ findOne: vi.fn().mockResolvedValue(setting) });
+    const service = makeService(settingRepo);
 
     const result = await service.get(MOCK_USER_ID);
 
     expect(result.userId).toBe(MOCK_USER_ID);
+    expect(settingRepo.create).not.toHaveBeenCalled();
   });
 
-  it('throws NotFoundError when no settings exist for the user', async () => {
-    const service = makeService();
+  it('creates a new document with empty formConfig and returns it when no settings exist', async () => {
+    const created = mockSetting({ formConfig: {} });
+    const settingRepo = makeSettingRepo({ create: vi.fn().mockResolvedValue(created) });
+    const service = makeService(settingRepo);
 
-    await expect(service.get(MOCK_USER_ID)).rejects.toThrow(NotFoundError);
-  });
+    const result = await service.get(MOCK_USER_ID);
 
-  it('throws NotFoundError when the settings belong to a different user', async () => {
-    const service = makeService();
-
-    await expect(service.get(OTHER_USER_ID)).rejects.toThrow(NotFoundError);
+    expect(settingRepo.create).toHaveBeenCalledOnce();
+    expect(result.formConfig).toEqual({});
   });
 });
 
