@@ -28,7 +28,7 @@ const mockPatient = (overrides: Record<string, unknown> = {}) => ({
   fullName: 'Jane Smith',
   age: 30,
   phoneNumber: '07700900000',
-  pharmacistName: 'Dr. Jones',
+  pharmacistName: ['Dr. Jones'],
   userId: MOCK_USER_ID,
   ...overrides
 });
@@ -59,7 +59,9 @@ const createPatientBody = () => ({
   fullName: 'Jane Smith',
   age: 30,
   phoneNumber: '07700900000',
-  pharmacistName: 'Dr. Jones'
+  customFields: {
+    sections: [{ name: 'medical-information', fields: [{ 'core-attended-to-by': 'Dr. Jones' }] }]
+  }
 });
 
 // ─── Repository / service factories ──────────────────────────────────────────
@@ -190,6 +192,79 @@ describe('PatientService.create', () => {
 
     await expect(service.create(createPatientBody(), MOCK_USER_ID)).rejects.toThrow(ValidationError);
   });
+
+  it('derives pharmacistName from a single standard-section core-attended-to-by value', async () => {
+    const patientRepo = makePatientRepo();
+    const service = makeService({
+      patientRepo,
+      pharmacistRepo: makePharmacistRepo({ findOne: vi.fn().mockResolvedValue(mockPharmacist()) })
+    });
+
+    await service.create(createPatientBody(), MOCK_USER_ID);
+
+    const [createdDoc] = (patientRepo.create as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(createdDoc.pharmacistName).toEqual(['Dr. Jones']);
+  });
+
+  it('derives pharmacistName as a multi-entry array preserving order and duplicates for repeatable sections', async () => {
+    const body = {
+      ...createPatientBody(),
+      customFields: {
+        sections: [
+          {
+            name: 'visits',
+            fields: [{ 'core-attended-to-by': 'Dr. Jones' }, { 'core-attended-to-by': 'Dr. Ada' }, { 'core-attended-to-by': 'Dr. Jones' }]
+          }
+        ]
+      }
+    };
+    const patientRepo = makePatientRepo();
+    const service = makeService({
+      patientRepo,
+      pharmacistRepo: makePharmacistRepo({
+        findOne: vi.fn().mockImplementation(({ name }) => Promise.resolve(mockPharmacist({ name })))
+      })
+    });
+
+    await service.create(body, MOCK_USER_ID);
+
+    const [createdDoc] = (patientRepo.create as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(createdDoc.pharmacistName).toEqual(['Dr. Jones', 'Dr. Ada', 'Dr. Jones']);
+  });
+
+  it.each([
+    ['an empty sections array', { sections: [] }],
+    ['sections with no core-attended-to-by key', { sections: [{ name: 'medical-information', fields: [{ 'core-other-field': 'value' }] }] }],
+    [
+      'sections with only empty-string core-attended-to-by values',
+      { sections: [{ name: 'medical-information', fields: [{ 'core-attended-to-by': '' }] }] }
+    ]
+  ])('throws ValidationError when customFields has %s', async (_description, customFields) => {
+    const service = makeService();
+
+    await expect(service.create({ ...createPatientBody(), customFields }, MOCK_USER_ID)).rejects.toThrow(ValidationError);
+  });
+
+  it('throws ValidationError when only one of several derived pharmacist names is invalid', async () => {
+    const body = {
+      ...createPatientBody(),
+      customFields: {
+        sections: [
+          {
+            name: 'visits',
+            fields: [{ 'core-attended-to-by': 'Dr. Jones' }, { 'core-attended-to-by': 'Dr. Unknown' }]
+          }
+        ]
+      }
+    };
+    const service = makeService({
+      pharmacistRepo: makePharmacistRepo({
+        findOne: vi.fn().mockImplementation(({ name }) => Promise.resolve(name === 'Dr. Jones' ? mockPharmacist({ name }) : null))
+      })
+    });
+
+    await expect(service.create(body, MOCK_USER_ID)).rejects.toThrow(ValidationError);
+  });
 });
 
 describe('PatientService.update', () => {
@@ -211,6 +286,46 @@ describe('PatientService.update', () => {
     const service = makeService();
 
     await expect(service.update(MOCK_PATIENT_ID, { fullName: 'Jane Updated' }, MOCK_USER_ID)).rejects.toThrow(NotFoundError);
+  });
+
+  it('re-derives pharmacistName from customFields when customFields is provided', async () => {
+    const newCustomFields = {
+      sections: [{ name: 'medical-information', fields: [{ 'core-attended-to-by': 'Dr. Ada' }] }]
+    };
+    const patientRepo = makePatientRepo({
+      findOne: vi.fn().mockResolvedValue(mockPatient()),
+      updateOne: vi.fn().mockResolvedValue(mockPatient({ pharmacistName: ['Dr. Ada'] }))
+    });
+    const service = makeService({
+      patientRepo,
+      pharmacistRepo: makePharmacistRepo({ findOne: vi.fn().mockResolvedValue(mockPharmacist({ name: 'Dr. Ada' })) })
+    });
+
+    await service.update(MOCK_PATIENT_ID, { customFields: newCustomFields }, MOCK_USER_ID);
+
+    const [, update] = (patientRepo.updateOne as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(update.pharmacistName).toEqual(['Dr. Ada']);
+  });
+
+  it('does not recompute pharmacistName when customFields is not provided', async () => {
+    const patientRepo = makePatientRepo({
+      findOne: vi.fn().mockResolvedValue(mockPatient()),
+      updateOne: vi.fn().mockResolvedValue(mockPatient({ fullName: 'Jane Updated' }))
+    });
+    const service = makeService({ patientRepo });
+
+    await service.update(MOCK_PATIENT_ID, { fullName: 'Jane Updated' }, MOCK_USER_ID);
+
+    const [, update] = (patientRepo.updateOne as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(update).not.toHaveProperty('pharmacistName');
+  });
+
+  it('throws ValidationError when customFields is present but has no valid core-attended-to-by value', async () => {
+    const service = makeService({
+      patientRepo: makePatientRepo({ findOne: vi.fn().mockResolvedValue(mockPatient()) })
+    });
+
+    await expect(service.update(MOCK_PATIENT_ID, { customFields: { sections: [] } }, MOCK_USER_ID)).rejects.toThrow(ValidationError);
   });
 });
 
