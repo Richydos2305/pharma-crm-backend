@@ -50,16 +50,21 @@ export interface IFile {
   userId: Types.ObjectId;
 }
 
+export interface IPatientCustomFieldsSection {
+  name: string;
+  fields: Array<Record<string, unknown>>;
+}
+
+export interface IPatientCustomFields {
+  sections: IPatientCustomFieldsSection[];
+}
+
 export interface IPatient {
   userId: Types.ObjectId;
-  pharmacistName: string;
+  pharmacistName: string[];
   fullName: string;
   age: number;
-  address?: string;
   phoneNumber: string;
-  prescriptions: string[];
-  appointmentDates: Date[];
-  notes: string;
-  customFields: Record<string, unknown>;
+  customFields: IPatientCustomFields;
   formSnapshot?: Record<string, unknown>;
 }
