@@ -1,22 +1,17 @@
-import { IPatientDocument } from '../../models/Patient';
+import { IPatientCustomFields, IPatientDocument } from '../../models/Patient';
 
 export interface CreatePatientBody {
   fullName: string;
   age: number;
-  address?: string;
   phoneNumber: string;
-  pharmacistName: string;
-  notes?: string;
-  customFields?: Record<string, unknown>;
+  customFields: IPatientCustomFields;
 }
 
 export interface UpdatePatientBody {
   fullName?: string;
   age?: number;
-  address?: string;
   phoneNumber?: string;
-  notes?: string;
-  customFields?: Record<string, unknown>;
+  customFields?: IPatientCustomFields;
 }
 
 export interface ListPatientsQuery {

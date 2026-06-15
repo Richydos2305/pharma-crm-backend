@@ -1,20 +1,16 @@
 import { Schema, model, HydratedDocument } from 'mongoose';
-import { IPatient } from '../interfaces/models';
+import { IPatient, IPatientCustomFields } from '../interfaces/models';
 
-export type { IPatient };
+export type { IPatient, IPatientCustomFields };
 
 const patientSchema = new Schema<IPatient>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    pharmacistName: { type: String, required: true, trim: true },
+    pharmacistName: { type: [String], required: true },
     fullName: { type: String, required: true, trim: true },
     age: { type: Number, required: true },
-    address: { type: String, trim: true },
     phoneNumber: { type: String, required: true, trim: true },
-    prescriptions: [{ type: String, trim: true }],
-    appointmentDates: [{ type: Date }],
-    notes: { type: String, default: '' },
-    customFields: { type: Schema.Types.Mixed, default: {} },
+    customFields: { type: Schema.Types.Mixed, default: { sections: [] } },
     formSnapshot: { type: Schema.Types.Mixed }
   },
   {

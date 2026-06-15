@@ -98,23 +98,29 @@ export const validateResetPasswordPayload = (body: ResetPasswordBody): void => {
   validate(body, resetPasswordSchema, 'Reset Password');
 };
 
+const customFieldsSchema = Joi.object({
+  sections: Joi.array()
+    .items(
+      Joi.object({
+        name: Joi.string().required(),
+        fields: Joi.array().items(Joi.object().unknown(true)).required()
+      })
+    )
+    .required()
+});
+
 export const createPatientSchema = Joi.object({
   fullName: Joi.string().required(),
   age: Joi.number().min(0).max(150).required(),
-  address: Joi.string(),
   phoneNumber: Joi.string().required(),
-  pharmacistName: Joi.string().required(),
-  notes: Joi.string(),
-  customFields: Joi.object().unknown(true)
+  customFields: customFieldsSchema.required()
 });
 
 export const updatePatientSchema = Joi.object({
   fullName: Joi.string(),
   age: Joi.number().min(0).max(150),
-  address: Joi.string(),
   phoneNumber: Joi.string(),
-  notes: Joi.string(),
-  customFields: Joi.object().unknown(true)
+  customFields: customFieldsSchema
 }).min(1);
 
 export const validateCreatePatientPayload = (body: CreatePatientBody): void => {

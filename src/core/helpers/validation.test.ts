@@ -26,7 +26,9 @@ const validPatient = () => ({
   fullName: 'John Smith',
   age: 30,
   phoneNumber: '08012345678',
-  pharmacistName: 'Dr. Ada'
+  customFields: {
+    sections: [{ name: 'medical-information', fields: [{ 'core-attended-to-by': 'Dr. Ada' }] }]
+  }
 });
 const validPharmacist = () => ({ name: 'Dr. Ada' });
 const validFile = () => ({ originalname: 'test.pdf', mimetype: 'application/pdf', size: 1024 }) as Express.Multer.File;
@@ -153,9 +155,14 @@ describe('validateCreatePatientPayload', () => {
     expect(() => validateCreatePatientPayload(rest as any)).toThrow(ValidationError);
   });
 
-  it('throws ValidationError when pharmacistName is missing', () => {
-    const { pharmacistName: _pharmacistName, ...rest } = validPatient();
+  it('throws ValidationError when customFields is missing', () => {
+    const { customFields: _customFields, ...rest } = validPatient();
     expect(() => validateCreatePatientPayload(rest as any)).toThrow(ValidationError);
+  });
+
+  it('throws ValidationError when customFields.sections[].fields is missing', () => {
+    const invalid = { ...validPatient(), customFields: { sections: [{ name: 'medical-information' }] } };
+    expect(() => validateCreatePatientPayload(invalid as any)).toThrow(ValidationError);
   });
 
   it('throws ValidationError when age is below 0', () => {

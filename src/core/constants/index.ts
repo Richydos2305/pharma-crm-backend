@@ -46,3 +46,7 @@ export const CloudinaryFolder = {
   PATIENT_RECORDS: 'patient-records',
   COMPANY_LOGOS: 'company-logos'
 } as const;
+
+export const PatientFormFieldIds = {
+  ATTENDED_BY: 'core-attended-to-by'
+} as const;
