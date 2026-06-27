@@ -6,6 +6,7 @@ import { UserRepository } from '../../repositories/UserRepository';
 import { RefreshTokenRepository } from '../../repositories/RefreshTokenRepository';
 import { VerificationTokenRepository } from '../../repositories/VerificationTokenRepository';
 import { EmailService } from '../email/index';
+import { SettingService } from '../setting/index';
 import { validateRegisterPayload, validateLoginPayload } from '../../helpers/validation';
 import { sanitizeUser, generateToken, hashToken } from '../../helpers/index';
 import { SecurityConfig, VerificationTokenTypes } from '../../constants';
@@ -31,7 +32,8 @@ export class AuthService {
     private readonly userRepo: UserRepository,
     private readonly tokenRepo: RefreshTokenRepository,
     private readonly verificationTokenRepo: VerificationTokenRepository,
-    private readonly emailService: EmailService
+    private readonly emailService: EmailService,
+    private readonly settingService: SettingService
   ) {}
 
   private async issueTokens(userId: string, role: string): Promise<{ accessToken: string; refreshToken: string }> {
@@ -55,6 +57,7 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(body.password, SecurityConfig.BCRYPT_ROUNDS);
     const user = await this.userRepo.create({ ...body, password: hashedPassword });
+    await this.settingService.create(user._id.toString());
 
     const { raw, hashed } = generateToken();
     await this.verificationTokenRepo.create({

@@ -16,7 +16,13 @@ import { PharmacistRepository } from '../repositories/PharmacistRepository';
 
 export class ServiceFactory {
   static createAuthService(): AuthService {
-    return new AuthService(new UserRepository(), new RefreshTokenRepository(), new VerificationTokenRepository(), new EmailService());
+    return new AuthService(
+      new UserRepository(),
+      new RefreshTokenRepository(),
+      new VerificationTokenRepository(),
+      new EmailService(),
+      new SettingService(new SettingRepository())
+    );
   }
 
   static createUserService(): UserService {
