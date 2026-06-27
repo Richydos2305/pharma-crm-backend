@@ -50,3 +50,41 @@ export const CloudinaryFolder = {
 export const PatientFormFieldIds = {
   ATTENDED_BY: 'core-attended-to-by'
 } as const;
+
+export const DEFAULT_FORM_SCHEMA = {
+  id: 'default-patient-form',
+  name: 'Patient Form',
+  status: 'published',
+  sections: [
+    {
+      id: 'personal-info',
+      name: 'Personal Information',
+      type: 'standard',
+      locked: true,
+      fields: [
+        { id: 'core-full-name', label: 'Full Name', type: 'short_text', required: true, locked: true },
+        { id: 'core-age', label: 'Age', type: 'number', required: true, locked: true },
+        { id: 'core-phone-number', label: 'Phone Number', type: 'short_text', required: true, locked: true },
+        { id: 'core-address', label: 'Home Address', type: 'short_text', required: false }
+      ]
+    },
+    {
+      id: 'medical-info',
+      name: 'Medical Information',
+      type: 'standard',
+      fields: [
+        { id: 'core-appointment-date', label: 'Appointment Date', type: 'date', required: false },
+        { id: 'core-attended-to-by', label: 'Attended To By', type: 'relation', required: true, locked: true },
+        { id: 'core-notes', label: 'Notes', type: 'textarea', required: false }
+      ]
+    },
+    {
+      id: 'core-prescriptions',
+      name: 'Prescriptions',
+      type: 'repeatable',
+      rowLabel: 'Prescription',
+      addButtonLabel: 'Add another prescription',
+      fields: [{ id: 'core-prescription-text', label: 'Prescription', type: 'textarea', required: false }]
+    }
+  ]
+};
