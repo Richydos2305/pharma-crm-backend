@@ -4,6 +4,7 @@ import { ConflictError, NotFoundError } from '../../errors/CustomErrors';
 import { logger } from '../../helpers/logger';
 import { ISettingDocument } from '../../models/Setting';
 import { SettingsData } from './interface';
+import { DEFAULT_FORM_SCHEMA } from '../../constants/index';
 
 export class SettingService {
   constructor(private readonly settingRepo: SettingRepository) {}
@@ -11,7 +12,7 @@ export class SettingService {
   async get(userId: string): Promise<ISettingDocument> {
     const setting = await this.settingRepo.findOne({ userId: new Types.ObjectId(userId) });
     if (setting) return setting;
-    const created = await this.settingRepo.create({ userId: new Types.ObjectId(userId), formConfig: {} });
+    const created = await this.settingRepo.create({ userId: new Types.ObjectId(userId), formConfig: { schema: DEFAULT_FORM_SCHEMA } });
     logger.info('Settings auto-created', { userId });
     return created;
   }
@@ -21,7 +22,7 @@ export class SettingService {
     if (existing) throw new ConflictError('Settings already exist for this user');
     const setting = await this.settingRepo.create({
       userId: new Types.ObjectId(userId),
-      formConfig: {}
+      formConfig: { schema: DEFAULT_FORM_SCHEMA }
     });
     logger.info('Settings Created', { userId });
     return setting;

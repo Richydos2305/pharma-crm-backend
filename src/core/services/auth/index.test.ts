@@ -19,6 +19,7 @@ import { VerificationTokenRepository } from '../../repositories/VerificationToke
 import { EmailService } from '../email/index';
 import { ConflictError, UnauthorizedError, EmailNotVerifiedError } from '../../errors/CustomErrors';
 import { VerificationTokenTypes } from '../../constants';
+import { SettingService } from '../setting/index';
 
 let hashedPassword: string;
 
@@ -100,12 +101,19 @@ const makeEmailService = (): EmailService =>
     sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined)
   }) as unknown as EmailService;
 
+const makeSettingService = (overrides = {}): SettingService =>
+  ({
+    create: vi.fn().mockResolvedValue({}),
+    ...overrides
+  }) as unknown as SettingService;
+
 const makeService = ({
   userRepo = makeUserRepo(),
   tokenRepo = makeTokenRepo(),
   verificationTokenRepo = makeVerificationTokenRepo(),
-  emailService = makeEmailService()
-} = {}) => new AuthService(userRepo, tokenRepo, verificationTokenRepo, emailService);
+  emailService = makeEmailService(),
+  settingService = makeSettingService()
+} = {}) => new AuthService(userRepo, tokenRepo, verificationTokenRepo, emailService, settingService);
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
