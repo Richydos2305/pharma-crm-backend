@@ -11,6 +11,7 @@ import {
   ResetPasswordBody
 } from '../services/auth/interface';
 import { CreatePatientBody, UpdatePatientBody } from '../services/patient/interface';
+import { QueueJobPayload, QueueOperationType } from '../services/queue/interface';
 import { SettingsData } from '../services/setting/interface';
 import { CreatePharmacistBody, UpdatePharmacistBody } from '../services/pharmacist/interface';
 
@@ -110,6 +111,7 @@ const customFieldsSchema = Joi.object({
 });
 
 export const createPatientSchema = Joi.object({
+  _id: Joi.string().hex().length(24).optional(),
   fullName: Joi.string().required(),
   age: Joi.number().min(0).max(150).required(),
   phoneNumber: Joi.string().required(),
@@ -122,6 +124,14 @@ export const updatePatientSchema = Joi.object({
   phoneNumber: Joi.string(),
   customFields: customFieldsSchema
 }).min(1);
+
+export const enqueueJobSchema = Joi.object({
+  operation: Joi.string()
+    .valid(...Object.values(QueueOperationType))
+    .required(),
+  localId: Joi.string().required(),
+  data: Joi.object().required()
+});
 
 export const validateCreatePatientPayload = (body: CreatePatientBody): void => {
   validate(body, createPatientSchema, 'Create Patient');
@@ -175,4 +185,8 @@ export const validateUpdatePharmacistPayload = (body: UpdatePharmacistBody): voi
 
 export const validateFileUpload = (file: Express.Multer.File | undefined): void => {
   if (!file) throw new ValidationError('No file provided');
+};
+
+export const validateEnqueueJobPayload = (body: QueueJobPayload): void => {
+  validate(body, enqueueJobSchema, 'Queue Job');
 };

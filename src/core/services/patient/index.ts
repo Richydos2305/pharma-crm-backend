@@ -32,15 +32,18 @@ export class PatientService {
 
   async create(body: CreatePatientBody, userId: string): Promise<IPatientDocument> {
     validateCreatePatientPayload(body);
-    const pharmacistName = await this.resolvePharmacistNames(body.customFields, userId);
+    const { _id, ...patientFields } = body;
+    const pharmacistName = await this.resolvePharmacistNames(patientFields.customFields, userId);
     const setting = await this.settingRepo.findOne({ userId: new Types.ObjectId(userId) });
     const formSnapshot = setting?.formConfig?.schema;
-    const patient = await this.patientRepo.create({
-      ...body,
+    const createData: Partial<IPatient> & { _id?: Types.ObjectId } = {
+      ...patientFields,
       pharmacistName,
       userId: new Types.ObjectId(userId),
       ...(formSnapshot !== undefined && { formSnapshot })
-    });
+    };
+    if (_id !== undefined) createData._id = new Types.ObjectId(_id);
+    const patient = await this.patientRepo.create(createData);
     logger.info('Patient Created', { patientId: patient._id.toString(), userId });
     return patient;
   }

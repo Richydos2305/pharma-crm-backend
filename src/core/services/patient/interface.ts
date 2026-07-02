@@ -1,6 +1,7 @@
 import { IPatientCustomFields, IPatientDocument } from '../../models/Patient';
 
 export interface CreatePatientBody {
+  _id?: string;
   fullName: string;
   age: number;
   phoneNumber: string;
