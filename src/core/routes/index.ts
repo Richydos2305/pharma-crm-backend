@@ -5,6 +5,7 @@ import { patientsRouter } from './patients';
 import { settingsRouter } from './settings';
 import { filesRouter } from './files';
 import { pharmacistsRouter } from './pharmacists';
+import { queueRouter } from './queue';
 
 export const router = Router();
 
@@ -18,3 +19,4 @@ router.use('/api/patients', patientsRouter);
 router.use('/api/settings', settingsRouter);
 router.use('/api/files', filesRouter);
 router.use('/api/pharmacists', pharmacistsRouter);
+router.use('/api/queue', queueRouter);

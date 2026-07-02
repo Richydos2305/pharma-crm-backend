@@ -38,8 +38,8 @@ export class AuthService {
 
   private async issueTokens(userId: string, role: string): Promise<{ accessToken: string; refreshToken: string }> {
     const accessToken = jwt.sign({ id: userId, role }, settings.jwtAccessSecret, { expiresIn: '1h' });
-    const refreshToken = jwt.sign({ id: userId }, settings.jwtRefreshSecret, { expiresIn: '7d', jwtid: randomUUID() });
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const refreshToken = jwt.sign({ id: userId }, settings.jwtRefreshSecret, { expiresIn: '3d', jwtid: randomUUID() });
+    const expiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
     await this.tokenRepo.create({
       token: refreshToken,
       userId: new Types.ObjectId(userId),
