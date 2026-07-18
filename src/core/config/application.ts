@@ -8,8 +8,7 @@ const REQUIRED_ENV_VARS = [
   'LOGTAIL_SOURCE_TOKEN',
   'RESEND_API_KEY',
   'APP_URL',
-  'EMAIL_FROM',
-  'REDIS_URL'
+  'EMAIL_FROM'
 ] as const;
 
 const validateConfig = (): void => {
@@ -33,7 +32,6 @@ interface AppConfig {
   resendApiKey: string;
   appUrl: string;
   emailFrom: string;
-  redisUrl: string;
 }
 
 const getConfig = (): AppConfig => {
@@ -51,8 +49,7 @@ const getConfig = (): AppConfig => {
     logtailToken: process.env.LOGTAIL_SOURCE_TOKEN!,
     resendApiKey: process.env.RESEND_API_KEY!,
     appUrl: process.env.APP_URL!,
-    emailFrom: process.env.EMAIL_FROM!,
-    redisUrl: process.env.REDIS_URL!
+    emailFrom: process.env.EMAIL_FROM!
   };
 };
 

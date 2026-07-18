@@ -47,8 +47,6 @@ export const CloudinaryFolder = {
   COMPANY_LOGOS: 'company-logos'
 } as const;
 
-export const QueueNames = { MAIN: 'pharmaprs' } as const;
-
 export const PatientFormFieldIds = {
   ATTENDED_BY: 'core-attended-to-by'
 } as const;
