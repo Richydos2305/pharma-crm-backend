@@ -7,7 +7,8 @@ const pharmacistSchema = new Schema<IPharmacist>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     name: { type: String, required: true, trim: true },
-    phoneNumber: { type: String }
+    phoneNumber: { type: String },
+    branch: { type: String }
   },
   { timestamps: true }
 );

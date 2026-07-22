@@ -3,11 +3,13 @@ import { IPharmacistDocument } from '../../models/Pharmacist';
 export interface CreatePharmacistBody {
   name: string;
   phoneNumber?: string;
+  branch?: string;
 }
 
 export interface UpdatePharmacistBody {
   name?: string;
   phoneNumber?: string;
+  branch?: string;
 }
 
 export interface ListPharmacistsResult {

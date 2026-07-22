@@ -13,6 +13,7 @@ export interface IUser {
   companyLogo?: string;
   companyLogoPublicId?: string;
   primaryColor?: string;
+  branches: string[];
 }
 
 export interface IRefreshToken {
@@ -40,6 +41,7 @@ export interface IPharmacist {
   userId: Types.ObjectId;
   name: string;
   phoneNumber?: string;
+  branch?: string;
 }
 
 export interface IFile {

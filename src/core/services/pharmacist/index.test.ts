@@ -12,7 +12,8 @@ vi.mock('../../config/application', () => ({
 
 import { PharmacistService } from './index';
 import { PharmacistRepository } from '../../repositories/PharmacistRepository';
-import { NotFoundError } from '../../errors/CustomErrors';
+import { UserRepository } from '../../repositories/UserRepository';
+import { NotFoundError, ValidationError } from '../../errors/CustomErrors';
 
 const MOCK_USER_ID = '507f1f77bcf86cd799439011';
 const MOCK_PHARMACIST_ID = '507f1f77bcf86cd799439012';
@@ -28,6 +29,12 @@ const mockPharmacist = (overrides: Record<string, unknown> = {}) => ({
   ...overrides
 });
 
+const mockUser = (overrides: Record<string, unknown> = {}) => ({
+  _id: MOCK_USER_ID,
+  branches: ['Main'],
+  ...overrides
+});
+
 // ─── Repository / service factories ──────────────────────────────────────────
 
 const makePharmacistRepo = (overrides = {}): PharmacistRepository =>
@@ -40,7 +47,13 @@ const makePharmacistRepo = (overrides = {}): PharmacistRepository =>
     ...overrides
   }) as unknown as PharmacistRepository;
 
-const makeService = (pharmacistRepo = makePharmacistRepo()) => new PharmacistService(pharmacistRepo);
+const makeUserRepo = (overrides = {}): UserRepository =>
+  ({
+    findOne: vi.fn().mockResolvedValue(mockUser()),
+    ...overrides
+  }) as unknown as UserRepository;
+
+const makeService = (pharmacistRepo = makePharmacistRepo(), userRepo = makeUserRepo()) => new PharmacistService(pharmacistRepo, userRepo);
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
@@ -82,6 +95,36 @@ describe('PharmacistService.create', () => {
     expect(pharmacistRepo.create).toHaveBeenCalledOnce();
     expect(result._id).toBe(MOCK_PHARMACIST_ID);
   });
+
+  it('creates a pharmacist without checking the user when no branch is provided', async () => {
+    const userRepo = makeUserRepo();
+    const service = makeService(makePharmacistRepo(), userRepo);
+
+    await service.create({ name: 'Dr. Jones' }, MOCK_USER_ID);
+
+    expect(userRepo.findOne).not.toHaveBeenCalled();
+  });
+
+  it("creates a pharmacist when the branch is one of the user's branches", async () => {
+    const pharmacistRepo = makePharmacistRepo();
+    const service = makeService(pharmacistRepo, makeUserRepo({ findOne: vi.fn().mockResolvedValue(mockUser({ branches: ['Main', 'North'] })) }));
+
+    await service.create({ name: 'Dr. Jones', branch: 'Main' }, MOCK_USER_ID);
+
+    expect(pharmacistRepo.create).toHaveBeenCalledOnce();
+  });
+
+  it("throws ValidationError when the branch is not one of the user's branches", async () => {
+    const service = makeService(makePharmacistRepo(), makeUserRepo({ findOne: vi.fn().mockResolvedValue(mockUser({ branches: ['Main'] })) }));
+
+    await expect(service.create({ name: 'Dr. Jones', branch: 'West' }, MOCK_USER_ID)).rejects.toThrow(ValidationError);
+  });
+
+  it('throws ValidationError when the user does not exist', async () => {
+    const service = makeService(makePharmacistRepo(), makeUserRepo({ findOne: vi.fn().mockResolvedValue(null) }));
+
+    await expect(service.create({ name: 'Dr. Jones', branch: 'Main' }, MOCK_USER_ID)).rejects.toThrow(ValidationError);
+  });
 });
 
 describe('PharmacistService.update', () => {
@@ -103,6 +146,22 @@ describe('PharmacistService.update', () => {
     const service = makeService();
 
     await expect(service.update(MOCK_PHARMACIST_ID, { name: 'Dr. Smith' }, OTHER_USER_ID)).rejects.toThrow(NotFoundError);
+  });
+
+  it("updates the pharmacist when the branch is one of the user's branches", async () => {
+    const pharmacistRepo = makePharmacistRepo({ findOne: vi.fn().mockResolvedValue(mockPharmacist()) });
+    const service = makeService(pharmacistRepo, makeUserRepo({ findOne: vi.fn().mockResolvedValue(mockUser({ branches: ['Main', 'North'] })) }));
+
+    await service.update(MOCK_PHARMACIST_ID, { branch: 'North' }, MOCK_USER_ID);
+
+    expect(pharmacistRepo.updateOne).toHaveBeenCalledOnce();
+  });
+
+  it("throws ValidationError when the branch is not one of the user's branches", async () => {
+    const pharmacistRepo = makePharmacistRepo({ findOne: vi.fn().mockResolvedValue(mockPharmacist()) });
+    const service = makeService(pharmacistRepo, makeUserRepo({ findOne: vi.fn().mockResolvedValue(mockUser({ branches: ['Main'] })) }));
+
+    await expect(service.update(MOCK_PHARMACIST_ID, { branch: 'West' }, MOCK_USER_ID)).rejects.toThrow(ValidationError);
   });
 });
 
