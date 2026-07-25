@@ -26,7 +26,7 @@ export class ServiceFactory {
   }
 
   static createUserService(): UserService {
-    return new UserService(new UserRepository());
+    return new UserService(new UserRepository(), new PharmacistRepository());
   }
 
   static createPatientService(): PatientService {
@@ -42,7 +42,7 @@ export class ServiceFactory {
   }
 
   static createPharmacistService(): PharmacistService {
-    return new PharmacistService(new PharmacistRepository());
+    return new PharmacistService(new PharmacistRepository(), new UserRepository());
   }
 
   static createOnboardingService(): OnboardingService {

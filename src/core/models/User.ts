@@ -14,7 +14,8 @@ const userSchema = new Schema<IUser>(
     companyName: { type: String },
     companyLogo: { type: String },
     companyLogoPublicId: { type: String },
-    primaryColor: { type: String }
+    primaryColor: { type: String },
+    branches: { type: [String], default: [] }
   },
   { timestamps: true }
 );

@@ -25,6 +25,7 @@ vi.mock('../../helpers', async (importOriginal) => {
 
 import { UserService } from './index';
 import { UserRepository } from '../../repositories/UserRepository';
+import { PharmacistRepository } from '../../repositories/PharmacistRepository';
 import { NotFoundError, SystemError, ValidationError } from '../../errors/CustomErrors';
 import { cloudinary } from '../../config/cloudinary';
 import { uploadToCloudinary } from '../../helpers';
@@ -42,6 +43,7 @@ const mockUser = (overrides: Record<string, unknown> = {}) => ({
   isEmailVerified: true,
   companyLogo: null,
   companyLogoPublicId: null,
+  branches: [],
   toObject() {
     return { ...this };
   },
@@ -59,7 +61,13 @@ const makeUserRepo = (overrides = {}): UserRepository =>
     ...overrides
   }) as unknown as UserRepository;
 
-const makeService = (userRepo = makeUserRepo()) => new UserService(userRepo);
+const makePharmacistRepo = (overrides = {}): PharmacistRepository =>
+  ({
+    find: vi.fn().mockResolvedValue([]),
+    ...overrides
+  }) as unknown as PharmacistRepository;
+
+const makeService = (userRepo = makeUserRepo(), pharmacistRepo = makePharmacistRepo()) => new UserService(userRepo, pharmacistRepo);
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
@@ -95,6 +103,43 @@ describe('UserService.updateProfile', () => {
     const service = makeService(makeUserRepo({ updateOne: vi.fn().mockResolvedValue(null) }));
 
     await expect(service.updateProfile(MOCK_USER_ID, { fullName: 'Jane Doe' })).rejects.toThrow(NotFoundError);
+  });
+
+  it('does not look up pharmacists when branches is not part of the update', async () => {
+    const pharmacistRepo = makePharmacistRepo();
+    const service = makeService(makeUserRepo(), pharmacistRepo);
+
+    await service.updateProfile(MOCK_USER_ID, { fullName: 'Jane Doe' });
+
+    expect(pharmacistRepo.find).not.toHaveBeenCalled();
+  });
+
+  it('allows removing a branch that has no pharmacist assigned to it', async () => {
+    const userRepo = makeUserRepo({ findOne: vi.fn().mockResolvedValue(mockUser({ branches: ['Main', 'North'] })) });
+    const pharmacistRepo = makePharmacistRepo({ find: vi.fn().mockResolvedValue([]) });
+    const service = makeService(userRepo, pharmacistRepo);
+
+    const result = await service.updateProfile(MOCK_USER_ID, { branches: ['North'] });
+
+    expect(result).not.toHaveProperty('password');
+  });
+
+  it('queries only the removed branches, so pharmacists with no branch assigned never block removal', async () => {
+    const userRepo = makeUserRepo({ findOne: vi.fn().mockResolvedValue(mockUser({ branches: ['Main', 'North'] })) });
+    const pharmacistRepo = makePharmacistRepo({ find: vi.fn().mockResolvedValue([]) });
+    const service = makeService(userRepo, pharmacistRepo);
+
+    await service.updateProfile(MOCK_USER_ID, { branches: ['North'] });
+
+    expect(pharmacistRepo.find).toHaveBeenCalledWith({ userId: MOCK_USER_ID, branch: { $in: ['Main'] } });
+  });
+
+  it('throws ValidationError when removing a branch still assigned to a pharmacist', async () => {
+    const userRepo = makeUserRepo({ findOne: vi.fn().mockResolvedValue(mockUser({ branches: ['Main', 'North'] })) });
+    const pharmacistRepo = makePharmacistRepo({ find: vi.fn().mockResolvedValue([{ branch: 'Main' }]) });
+    const service = makeService(userRepo, pharmacistRepo);
+
+    await expect(service.updateProfile(MOCK_USER_ID, { branches: ['North'] })).rejects.toThrow(ValidationError);
   });
 });
 
