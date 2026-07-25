@@ -67,7 +67,8 @@ export const updateProfileSchema = Joi.object({
   phoneNumber: Joi.string(),
   companyName: Joi.string(),
   companyLogo: Joi.string(),
-  primaryColor: Joi.string()
+  primaryColor: Joi.string(),
+  branches: Joi.array().items(Joi.string())
 }).min(1);
 
 export const validateRegisterPayload = (body: RegisterBody): void => {
@@ -158,12 +159,14 @@ export const validateUpdateSettingsPayload = (body: SettingsData): void => {
 
 export const createPharmacistSchema = Joi.object({
   name: Joi.string().required(),
-  phoneNumber: Joi.string()
+  phoneNumber: Joi.string(),
+  branch: Joi.string()
 });
 
 export const updatePharmacistSchema = Joi.object({
   name: Joi.string(),
-  phoneNumber: Joi.string()
+  phoneNumber: Joi.string(),
+  branch: Joi.string()
 }).min(1);
 
 export const validateCreatePharmacistPayload = (body: CreatePharmacistBody): void => {

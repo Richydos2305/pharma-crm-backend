@@ -1,13 +1,24 @@
 import { Types } from 'mongoose';
 import { PharmacistRepository } from '../../repositories/PharmacistRepository';
+import { UserRepository } from '../../repositories/UserRepository';
 import { validateCreatePharmacistPayload, validateUpdatePharmacistPayload } from '../../helpers/validation';
-import { NotFoundError } from '../../errors/CustomErrors';
+import { NotFoundError, ValidationError } from '../../errors/CustomErrors';
 import { logger } from '../../helpers/logger';
 import { IPharmacistDocument } from '../../models/Pharmacist';
 import { CreatePharmacistBody, UpdatePharmacistBody, ListPharmacistsResult } from './interface';
 
 export class PharmacistService {
-  constructor(private readonly pharmacistRepo: PharmacistRepository) {}
+  constructor(
+    private readonly pharmacistRepo: PharmacistRepository,
+    private readonly userRepo: UserRepository
+  ) {}
+
+  private async validateBranch(branch: string, userId: string): Promise<void> {
+    const user = await this.userRepo.findOne({ _id: userId });
+    if (!user || !user.branches.includes(branch)) {
+      throw new ValidationError(`Branch "${branch}" is not a valid branch for this user`);
+    }
+  }
 
   async list(userId: string): Promise<ListPharmacistsResult> {
     const pharmacists = await this.pharmacistRepo.find({ userId });
@@ -22,6 +33,7 @@ export class PharmacistService {
 
   async create(body: CreatePharmacistBody, userId: string): Promise<IPharmacistDocument> {
     validateCreatePharmacistPayload(body);
+    if (body.branch) await this.validateBranch(body.branch, userId);
     const pharmacist = await this.pharmacistRepo.create({
       ...body,
       userId: new Types.ObjectId(userId)
@@ -34,6 +46,7 @@ export class PharmacistService {
     validateUpdatePharmacistPayload(body);
     const pharmacist = await this.pharmacistRepo.findOne({ _id: id, userId });
     if (!pharmacist) throw new NotFoundError('Pharmacist not found');
+    if (body.branch) await this.validateBranch(body.branch, userId);
     const updated = await this.pharmacistRepo.updateOne(id, body, { new: true });
     if (!updated) throw new NotFoundError('Pharmacist not found');
     logger.info('Pharmacist Updated', { pharmacistId: id, userId });

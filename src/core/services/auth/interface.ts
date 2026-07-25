@@ -7,6 +7,7 @@ export interface SanitizedUser {
   companyName?: string;
   companyLogo?: string;
   primaryColor?: string;
+  branches?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -59,4 +60,5 @@ export interface UpdateProfileBody {
   companyName?: string;
   companyLogo?: string;
   primaryColor?: string;
+  branches?: string[];
 }
