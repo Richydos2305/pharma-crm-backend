@@ -1,4 +1,4 @@
-# PharmaPRS — Backend
+# PharmaPRS
 
 REST API powering PharmaPRS, a CRM built for independent pharmacies and pharmacy chains — manage patients, pharmacists, custom intake forms, and multi-branch operations from one dashboard.
 
